@@ -5,26 +5,25 @@ const https   = require('https');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-
 const ROOT = __dirname;
 
 app.use(express.json());
-
-app.use(express.static(ROOT, {
-  maxAge: '1d',
-  etag: true,
-  index: 'index.html',
-}));
 
 // Security headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  // Disable caching for HTML, JS, CSS so updates are always served fresh
+  if (/\.(html|js|css)$/.test(req.path) || req.path === '/') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
   next();
 });
 
-// ─── GROQ CHAT PROXY ───
+// ─── GROQ CHAT PROXY (must be before static/catch-all) ───
 app.post('/api/chat', async (req, res) => {
   const { messages } = req.body;
 
@@ -32,7 +31,7 @@ app.post('/api/chat', async (req, res) => {
     return res.status(500).json({ error: 'GROQ_API_KEY not configured on the server.' });
   }
 
-  const systemPrompt = `You are Agnib's AI assistant embedded in his personal portfolio website. 
+  const systemPrompt = `You are Agnib's AI assistant embedded in his personal portfolio website.
 Your job is to help visitors learn about Agnib Sikder — a Full-Stack Developer and MCA student at RCCIIT, Kolkata.
 
 Key facts about Agnib:
@@ -72,7 +71,7 @@ Be concise, friendly, and helpful. If someone asks about hiring or collaboration
       try {
         const parsed = JSON.parse(data);
         if (parsed.error) return res.status(500).json({ error: parsed.error.message });
-        const reply = parsed.choices?.[0]?.message?.content || 'Sorry, I couldn\'t generate a response.';
+        const reply = parsed.choices?.[0]?.message?.content || "Sorry, I couldn't generate a response.";
         res.json({ reply });
       } catch (e) {
         res.status(500).json({ error: 'Failed to parse Groq response.' });
@@ -88,7 +87,13 @@ Be concise, friendly, and helpful. If someone asks about hiring or collaboration
   groqReq.end();
 });
 
-// Catch-all: always serve index.html
+// Static files — no maxAge so no aggressive browser caching
+app.use(express.static(ROOT, {
+  etag: false,
+  index: 'index.html',
+}));
+
+// Catch-all: serve index.html for any unmatched GET
 app.get('*', (req, res) => {
   res.sendFile(path.join(ROOT, 'index.html'));
 });
