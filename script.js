@@ -215,3 +215,143 @@
     c.style.transitionDelay = `${i * 28}ms`;
   });
 })();
+
+/* ═══════════════════════════════════════════
+   CHATBOX — Groq AI Assistant
+   ═══════════════════════════════════════════ */
+(function () {
+  const toggle   = document.getElementById('chat-toggle');
+  const window_  = document.getElementById('chat-window');
+  const messages = document.getElementById('chat-messages');
+  const input    = document.getElementById('chat-input');
+  const sendBtn  = document.getElementById('chat-send');
+  const clearBtn = document.getElementById('chat-clear');
+  const openIcon = toggle.querySelector('.chat-toggle-icon');
+  const closeIcon= toggle.querySelector('.chat-close-icon');
+
+  let isOpen = false;
+  let history = []; // { role, content }
+  let isTyping = false;
+
+  // ── Toggle open/close ──
+  toggle.addEventListener('click', () => {
+    isOpen = !isOpen;
+    window_.classList.toggle('open', isOpen);
+    window_.setAttribute('aria-hidden', String(!isOpen));
+    openIcon.style.display  = isOpen ? 'none' : '';
+    closeIcon.style.display = isOpen ? '' : 'none';
+    if (isOpen) setTimeout(() => input.focus(), 300);
+  });
+
+  // ── Send message ──
+  async function sendMessage(text) {
+    text = text.trim();
+    if (!text || isTyping) return;
+
+    // Remove suggestions after first real message
+    const suggestions = messages.querySelector('.chat-suggestions');
+    if (suggestions) suggestions.remove();
+
+    appendMsg('user', text);
+    history.push({ role: 'user', content: text });
+    input.value = '';
+    input.disabled = true;
+    sendBtn.disabled = true;
+
+    const typingEl = appendTyping();
+    isTyping = true;
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history }),
+      });
+      const data = await res.json();
+      typingEl.remove();
+
+      if (data.error) {
+        appendMsg('assistant', '⚠️ ' + data.error);
+      } else {
+        appendMsg('assistant', data.reply);
+        history.push({ role: 'assistant', content: data.reply });
+      }
+    } catch (e) {
+      typingEl.remove();
+      appendMsg('assistant', '⚠️ Network error. Please try again.');
+    }
+
+    isTyping = false;
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.focus();
+  }
+
+  // ── Append a chat bubble ──
+  function appendMsg(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = `chat-msg ${role}`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    bubble.textContent = text;
+
+    const time = document.createElement('div');
+    time.className = 'chat-time';
+    time.textContent = formatTime(new Date());
+
+    wrap.appendChild(bubble);
+    wrap.appendChild(time);
+    messages.appendChild(wrap);
+    messages.scrollTop = messages.scrollHeight;
+    return wrap;
+  }
+
+  // ── Typing indicator ──
+  function appendTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-msg assistant';
+    wrap.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+    messages.appendChild(wrap);
+    messages.scrollTop = messages.scrollHeight;
+    return wrap;
+  }
+
+  // ── Time helper ──
+  function formatTime(d) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ── Send on Enter ──
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input.value);
+    }
+  });
+
+  sendBtn.addEventListener('click', () => sendMessage(input.value));
+
+  // ── Suggestion chips ──
+  messages.addEventListener('click', (e) => {
+    if (e.target.classList.contains('chip')) {
+      sendMessage(e.target.dataset.msg);
+    }
+  });
+
+  // ── Clear conversation ──
+  clearBtn.addEventListener('click', () => {
+    history = [];
+    messages.innerHTML = `
+      <div class="chat-msg assistant">
+        <div class="chat-bubble">👋 Hi! I'm Agnib's AI assistant. Ask me anything about his skills, projects, or how to get in touch!</div>
+        <div class="chat-time">Just now</div>
+      </div>
+      <div class="chat-suggestions">
+        <button class="chip" data-msg="What are Agnib's main skills?">🛠 Skills</button>
+        <button class="chip" data-msg="Tell me about Agnib's projects">🚀 Projects</button>
+        <button class="chip" data-msg="Is Agnib available for hire?">💼 Hire</button>
+        <button class="chip" data-msg="How can I contact Agnib?">✉️ Contact</button>
+      </div>`;
+  });
+})();

@@ -674,6 +674,64 @@
   </div>
 </section>
 
+<!-- ═══════════════ CHATBOX ═══════════════ -->
+<!-- Chat Toggle Button -->
+<button id="chat-toggle" class="chat-toggle" aria-label="Open AI Assistant">
+  <span class="material-icons-round chat-toggle-icon">smart_toy</span>
+  <span class="material-icons-round chat-close-icon" style="display:none;">close</span>
+  <span class="chat-badge">AI</span>
+</button>
+
+<!-- Chat Window -->
+<div id="chat-window" class="chat-window" aria-hidden="true">
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <div class="chat-avatar">
+        <span class="material-icons-round" style="font-size:1rem;">smart_toy</span>
+      </div>
+      <div>
+        <div class="chat-header-name">Agnib's Assistant</div>
+        <div class="chat-header-sub">
+          <span class="live-dot" style="width:6px;height:6px;"></span>
+          Powered by Groq · llama-3.3-70b
+        </div>
+      </div>
+    </div>
+    <button class="chat-clear" id="chat-clear" title="Clear conversation">
+      <span class="material-icons-round" style="font-size:1rem;">restart_alt</span>
+    </button>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg assistant">
+      <div class="chat-bubble">
+        👋 Hi! I'm Agnib's AI assistant. Ask me anything about his skills, projects, or how to get in touch!
+      </div>
+      <div class="chat-time">Just now</div>
+    </div>
+    <div class="chat-suggestions">
+      <button class="chip" data-msg="What are Agnib's main skills?">🛠 Skills</button>
+      <button class="chip" data-msg="Tell me about Agnib's projects">🚀 Projects</button>
+      <button class="chip" data-msg="Is Agnib available for hire?">💼 Hire</button>
+      <button class="chip" data-msg="How can I contact Agnib?">✉️ Contact</button>
+    </div>
+  </div>
+
+  <div class="chat-input-row">
+    <input
+      type="text"
+      id="chat-input"
+      class="chat-input"
+      placeholder="Ask me anything about Agnib…"
+      autocomplete="off"
+      maxlength="400"
+    />
+    <button id="chat-send" class="chat-send" aria-label="Send">
+      <span class="material-icons-round" style="font-size:1.1rem;">send</span>
+    </button>
+  </div>
+</div>
+
 <!-- ═══════════════ FOOTER ═══════════════ -->
 <footer>
   <div style="max-width:1200px;margin:0 auto;padding:0 24px;">
